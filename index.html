@@ -26,6 +26,9 @@
       pointer-events: none;
     }
   </style>
+  <!-- Elegant fonts for the anniversary text -->
+  <link href="https://fonts.googleapis.com/css?family=Great+Vibes:400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Dancing+Script:700&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -33,14 +36,25 @@
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
 <script>
-  console.log("START");
+  /**
+   * Anniversary 3D Scene
+   * 
+   * Features:
+   * - 3D heart as the main object, gently pulsing and rotating
+   * - Animated "Kocham Cię ❤️" text, appearing letter by letter in an elegant font
+   * - Floating small hearts in the background, moving across the whole screen
+   * - Responsive design for mobile and desktop
+   * 
+   * Interactions:
+   * - Animation starts on first touch or click (removes the hint, starts text animation and heart pulse)
+   */
 
   let started = false;
 
-  // SCENA
+  // Scene setup
   const scene = new THREE.Scene();
 
-  // KAMERA – telefon
+  // Perspective camera for a natural 3D look
   const camera = new THREE.PerspectiveCamera(
     60,
     window.innerWidth / window.innerHeight,
@@ -49,7 +63,7 @@
   );
   camera.position.z = 6;
 
-  // RENDERER
+  // WebGL renderer with antialiasing and low-power preference
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     powerPreference: "low-power"
@@ -58,20 +72,22 @@
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-  // ŚWIATŁO
+  // Lighting: ambient and point light for soft, romantic effect
   scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-
   const light = new THREE.PointLight(0xff6699, 1);
   light.position.set(5, 5, 5);
   scene.add(light);
 
-  // SERCE
+  /**
+   * Main 3D heart mesh
+   * Custom shape using bezier curves for a classic heart look
+   */
   const heartShape = new THREE.Shape();
-  heartShape.moveTo(0, 0);
-  heartShape.bezierCurveTo(0, 0, -1, -1, -2, 0);
-  heartShape.bezierCurveTo(-4, 3, -2, 5, 0, 6);
-  heartShape.bezierCurveTo(2, 5, 4, 3, 2, 0);
-  heartShape.bezierCurveTo(1, -1, 0, 0, 0, 0);
+  heartShape.moveTo(0, 0.4);
+  heartShape.bezierCurveTo(0, 0.4, -1.2, -1.1, -2, 0.4);
+  heartShape.bezierCurveTo(-2.8, 1.5, -1.4, 3.2, 0, 4);
+  heartShape.bezierCurveTo(1.4, 3.2, 2.8, 1.5, 2, 0.4);
+  heartShape.bezierCurveTo(1.2, -1.1, 0, 0.4, 0, 0.4);
 
   const heartGeometry = new THREE.ExtrudeGeometry(heartShape, {
     depth: 0.8,
@@ -89,9 +105,16 @@
 
   const heart = new THREE.Mesh(heartGeometry, heartMaterial);
   heart.scale.set(0.35, 0.35, 0.35);
+  heart.rotation.x = Math.PI;
+  heart.position.y = 0.7;
   scene.add(heart);
 
-  // TEKST JAKO CANVAS (100% BEZPIECZNE)
+  /**
+   * Creates a text sprite using canvas and elegant fonts.
+   * Used for the animated "Kocham Cię ❤️" message.
+   * @param {string} text - Text to render
+   * @returns {THREE.Sprite}
+   */
   function createTextSprite(text) {
     const canvas = document.createElement("canvas");
     canvas.width = 1024;
@@ -99,7 +122,8 @@
 
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.font = "bold 120px Arial";
+
+    ctx.font = "bold 80px 'Great Vibes', 'Dancing Script', 'Times New Roman', serif";
     ctx.fillStyle = "white";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -109,25 +133,101 @@
     const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
     const sprite = new THREE.Sprite(material);
 
-    sprite.scale.set(4, 1, 1);
+    sprite.scale.set(2.2, 0.7, 1);
     sprite.position.y = -1.8;
+
+    // Store references for dynamic updates
+    sprite._canvas = canvas;
+    sprite._ctx = ctx;
+    sprite._texture = texture;
 
     return sprite;
   }
 
-  const textSprite = createTextSprite("Kocham Cię ❤️");
+  /**
+   * Animated typewriter effect for the main message.
+   * Reveals the text letter by letter.
+   */
+  const fullText = "Kocham Cię ❤️";
+  let currentText = "";
+  let textSprite = createTextSprite("");
   scene.add(textSprite);
 
-  // START PO DOTKNIĘCIU
+  function animateTextLetterByLetter(index = 0) {
+    if (index > fullText.length) return;
+    currentText = fullText.slice(0, index);
+    const ctx = textSprite._ctx;
+    ctx.clearRect(0, 0, textSprite._canvas.width, textSprite._canvas.height);
+    ctx.font = "bold 80px 'Great Vibes', 'Dancing Script', 'Times New Roman', serif";
+    ctx.fillStyle = "white";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(currentText, textSprite._canvas.width / 2, textSprite._canvas.height / 2);
+    textSprite._texture.needsUpdate = true;
+    setTimeout(() => animateTextLetterByLetter(index + 1), 90);
+  }
+
+  /**
+   * Starts the animation on first user interaction.
+   * Hides the hint and triggers the typewriter effect.
+   */
   window.addEventListener("touchstart", start, { once: true });
   window.addEventListener("click", start, { once: true });
 
   function start() {
     started = true;
     document.getElementById("hint").style.display = "none";
+    animateTextLetterByLetter(1);
   }
 
-  // ANIMACJA
+  /**
+   * Floating background hearts
+   * Creates multiple small hearts that float upwards and sway gently.
+   */
+  const flyingHearts = [];
+  const heartCount = 40;
+
+  for (let i = 0; i < heartCount; i++) {
+    const shape = new THREE.Shape();
+    shape.moveTo(0, 0.1);
+    shape.bezierCurveTo(0, 0.1, -0.12, -0.11, -0.2, 0.1);
+    shape.bezierCurveTo(-0.28, 0.15, -0.14, 0.32, 0, 0.4);
+    shape.bezierCurveTo(0.14, 0.32, 0.28, 0.15, 0.2, 0.1);
+    shape.bezierCurveTo(0.12, -0.11, 0, 0.1, 0, 0.1);
+
+    const geometry = new THREE.ExtrudeGeometry(shape, {
+      depth: 0.05,
+      bevelEnabled: false
+    });
+
+    const material = new THREE.MeshStandardMaterial({
+      color: 0xff99bb,
+      metalness: 0.1,
+      roughness: 0.7,
+      transparent: true,
+      opacity: 0.7
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.x = (Math.random() - 0.5) * 12;
+    mesh.position.y = Math.random() * 10 - 3;
+    mesh.position.z = -2 - Math.random() * 2;
+    mesh.rotation.z = Math.random() * Math.PI * 2;
+    mesh.scale.setScalar(0.4 + Math.random() * 0.8);
+
+    scene.add(mesh);
+    flyingHearts.push({
+      mesh,
+      speed: 0.004 + Math.random() * 0.012,
+      sway: 0.5 + Math.random() * 1.2,
+      swaySpeed: 0.5 + Math.random()
+    });
+  }
+
+  /**
+   * Main animation loop.
+   * Handles heart pulsing, rotation, text sprite animation, and floating hearts.
+   */
   let t = 0;
   function animate() {
     requestAnimationFrame(animate);
@@ -142,6 +242,16 @@
       heart.scale.set(0.35 * pulse, 0.35 * pulse, 0.35 * pulse);
 
       textSprite.rotation.z += 0.01;
+
+      flyingHearts.forEach((h, i) => {
+        h.mesh.position.y += h.speed;
+        h.mesh.position.x += Math.sin(t * h.swaySpeed + i) * 0.01 * h.sway;
+        h.mesh.rotation.z += 0.01 * (i % 2 === 0 ? 1 : -1);
+        if (h.mesh.position.y > 6) {
+          h.mesh.position.y = -4;
+          h.mesh.position.x = (Math.random() - 0.5) * 12;
+        }
+      });
     }
 
     renderer.render(scene, camera);
@@ -149,7 +259,10 @@
 
   animate();
 
-  // RESIZE
+  /**
+   * Responsive resize handler.
+   * Keeps the scene fitting the window on any device.
+   */
   window.addEventListener("resize", () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
