@@ -109,6 +109,33 @@
   heart.position.y = 0.7;
   scene.add(heart);
 
+  // Soft glow behind the heart (not attached to the heart, just in the background)
+  const glowCanvas = document.createElement("canvas");
+  glowCanvas.width = 512;
+  glowCanvas.height = 512;
+  const glowCtx = glowCanvas.getContext("2d");
+  const gradient = glowCtx.createRadialGradient(
+    256, 256, 60, 256, 256, 240
+  );
+  gradient.addColorStop(0, "rgba(255,102,153,0.45)");
+  gradient.addColorStop(0.5, "rgba(255,102,153,0.18)");
+  gradient.addColorStop(1, "rgba(255,102,153,0)");
+  glowCtx.fillStyle = gradient;
+  glowCtx.beginPath();
+  glowCtx.arc(256, 256, 240, 0, 2 * Math.PI);
+  glowCtx.fill();
+
+  const glowTexture = new THREE.CanvasTexture(glowCanvas);
+  const glowMaterial = new THREE.SpriteMaterial({
+    map: glowTexture,
+    transparent: true,
+    depthWrite: false,
+  });
+  const glowSprite = new THREE.Sprite(glowMaterial);
+  glowSprite.scale.set(3.2, 3.2, 1);
+  glowSprite.position.set(0, 0.7, -0.5);    
+  scene.add(glowSprite);
+
   /**
    * Creates a text sprite using canvas and elegant fonts.
    * Used for the animated "Kocham Cię ❤️" message.
@@ -235,11 +262,12 @@
     if (started) {
       t += 0.03;
 
-      heart.rotation.y += 0.01;
-      heart.rotation.x += 0.005;
-
-      const pulse = 1 + Math.sin(t) * 0.03;
+      const pulse = 1 + Math.sin(t * 2) * 0.04;
       heart.scale.set(0.35 * pulse, 0.35 * pulse, 0.35 * pulse);
+
+
+      heart.rotation.y = Math.sin(t) * 0.38; 
+      heart.rotation.x = Math.PI + Math.sin(t * 0.7) * 0.18; 
 
       textSprite.rotation.z += 0.01;
 
