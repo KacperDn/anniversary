@@ -4,9 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Kocham Cię ❤️</title>
+
   <style>
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
       overflow: hidden;
       background: black;
       touch-action: manipulation;
@@ -17,9 +19,10 @@
       bottom: 40px;
       width: 100%;
       text-align: center;
-      color: #fff;
+      color: white;
       opacity: 0.6;
       font-size: 14px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       pointer-events: none;
     }
   </style>
@@ -28,17 +31,16 @@
 
 <div id="hint">Dotknij serca ❤️</div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/loaders/FontLoader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/geometries/TextGeometry.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
 <script>
-  console.log("Three.js startuje");
+  console.log("START");
 
   let started = false;
 
+  // SCENA
   const scene = new THREE.Scene();
 
+  // KAMERA – telefon
   const camera = new THREE.PerspectiveCamera(
     60,
     window.innerWidth / window.innerHeight,
@@ -47,6 +49,7 @@
   );
   camera.position.z = 6;
 
+  // RENDERER
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     powerPreference: "low-power"
@@ -55,13 +58,14 @@
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
+  // ŚWIATŁO
   scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 
-  const pointLight = new THREE.PointLight(0xff6699, 1);
-  pointLight.position.set(5, 5, 5);
-  scene.add(pointLight);
+  const light = new THREE.PointLight(0xff6699, 1);
+  light.position.set(5, 5, 5);
+  scene.add(light);
 
-  // SERCE (ładuje się ZAWSZE)
+  // SERCE
   const heartShape = new THREE.Shape();
   heartShape.moveTo(0, 0);
   heartShape.bezierCurveTo(0, 0, -1, -1, -2, 0);
@@ -87,26 +91,34 @@
   heart.scale.set(0.35, 0.35, 0.35);
   scene.add(heart);
 
-  // TEKST (opcjonalny)
-  let text;
-  const loader = new THREE.FontLoader();
-  loader.load(
-    "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/helvetiker_regular.typeface.json",
-    (font) => {
-      const textGeometry = new THREE.TextGeometry("Kocham Cię", {
-        font,
-        size: 0.45,
-        height: 0.08
-      });
+  // TEKST JAKO CANVAS (100% BEZPIECZNE)
+  function createTextSprite(text) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1024;
+    canvas.height = 256;
 
-      const textMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
-      text = new THREE.Mesh(textGeometry, textMaterial);
-      text.geometry.center();
-      text.position.y = -1.4;
-      scene.add(text);
-    }
-  );
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = "bold 120px Arial";
+    ctx.fillStyle = "white";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
 
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    const sprite = new THREE.Sprite(material);
+
+    sprite.scale.set(4, 1, 1);
+    sprite.position.y = -1.8;
+
+    return sprite;
+  }
+
+  const textSprite = createTextSprite("Kocham Cię ❤️");
+  scene.add(textSprite);
+
+  // START PO DOTKNIĘCIU
   window.addEventListener("touchstart", start, { once: true });
   window.addEventListener("click", start, { once: true });
 
@@ -115,19 +127,21 @@
     document.getElementById("hint").style.display = "none";
   }
 
+  // ANIMACJA
   let t = 0;
   function animate() {
     requestAnimationFrame(animate);
 
     if (started) {
       t += 0.03;
+
       heart.rotation.y += 0.01;
       heart.rotation.x += 0.005;
 
       const pulse = 1 + Math.sin(t) * 0.03;
       heart.scale.set(0.35 * pulse, 0.35 * pulse, 0.35 * pulse);
 
-      if (text) text.rotation.y -= 0.01;
+      textSprite.rotation.z += 0.01;
     }
 
     renderer.render(scene, camera);
@@ -135,6 +149,7 @@
 
   animate();
 
+  // RESIZE
   window.addEventListener("resize", () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
