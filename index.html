@@ -171,14 +171,63 @@
     return sprite;
   }
 
+
   /**
-   * Animated typewriter effect for the main message.
+   * Animated typewriter effect for the main message and personalized name.
    * Reveals the text letter by letter.
    */
   const fullText = "Kocham Cię ❤️";
+  const nameText = "Dla Łucji";
   let currentText = "";
+  let currentName = "";
+
+  // Sprite for the name (above main text)
+  function createNameSprite(text) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1024;
+    canvas.height = 180;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = "bold 100px 'Dancing Script', 'Great Vibes', 'Times New Roman', serif";
+    ctx.fillStyle = "#ffb6e6";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    const sprite = new THREE.Sprite(material);
+    sprite.scale.set(2.2, 0.5, 1);
+    sprite.position.y = -1.1;
+    sprite._canvas = canvas;
+    sprite._ctx = ctx;
+    sprite._texture = texture;
+    return sprite;
+  }
+
+  let nameSprite = createNameSprite("");
+  scene.add(nameSprite);
+
+  // Sprite for the main text
   let textSprite = createTextSprite("");
   scene.add(textSprite);
+
+  // Animate name first, then main text
+  function animateNameLetterByLetter(index = 0) {
+    if (index > nameText.length) {
+      setTimeout(() => animateTextLetterByLetter(1), 400);
+      return;
+    }
+    currentName = nameText.slice(0, index);
+    const ctx = nameSprite._ctx;
+    ctx.clearRect(0, 0, nameSprite._canvas.width, nameSprite._canvas.height);
+    ctx.font = "bold 100px 'Dancing Script', 'Great Vibes', 'Times New Roman', serif";
+    ctx.fillStyle = "#ffb6e6";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(currentName, nameSprite._canvas.width / 2, nameSprite._canvas.height / 2);
+    nameSprite._texture.needsUpdate = true;
+    setTimeout(() => animateNameLetterByLetter(index + 1), 80);
+  }
 
   function animateTextLetterByLetter(index = 0) {
     if (index > fullText.length) return;
@@ -204,7 +253,7 @@
   function start() {
     started = true;
     document.getElementById("hint").style.display = "none";
-    animateTextLetterByLetter(1);
+    animateNameLetterByLetter(1);
   }
 
   /**
@@ -270,6 +319,7 @@
       heart.rotation.x = Math.PI + Math.sin(t * 0.7) * 0.18; 
 
       textSprite.rotation.z += 0.01;
+      nameSprite.rotation.z -= 0.005;
 
       flyingHearts.forEach((h, i) => {
         h.mesh.position.y += h.speed;
