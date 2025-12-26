@@ -10,7 +10,6 @@
       overflow: hidden;
       background: black;
       touch-action: manipulation;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
     #hint {
@@ -31,10 +30,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
+  console.log("Three.js startuje");
+
   let started = false;
 
   const scene = new THREE.Scene();
-
 
   const camera = new THREE.PerspectiveCamera(
     60,
@@ -44,7 +44,6 @@
   );
   camera.position.z = 6;
 
-
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     powerPreference: "low-power"
@@ -53,14 +52,13 @@
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-
   scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 
   const pointLight = new THREE.PointLight(0xff6699, 1);
   pointLight.position.set(5, 5, 5);
   scene.add(pointLight);
 
-
+  // SERCE (ładuje się ZAWSZE)
   const heartShape = new THREE.Shape();
   heartShape.moveTo(0, 0);
   heartShape.bezierCurveTo(0, 0, -1, -1, -2, 0);
@@ -86,10 +84,11 @@
   heart.scale.set(0.35, 0.35, 0.35);
   scene.add(heart);
 
+  // TEKST (opcjonalny)
   let text;
   const loader = new THREE.FontLoader();
   loader.load(
-    "https://threejs.org/examples/fonts/helvetiker_regular.typeface.json",
+    "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/helvetiker_regular.typeface.json",
     (font) => {
       const textGeometry = new THREE.TextGeometry("Kocham Cię", {
         font,
@@ -99,22 +98,19 @@
 
       const textMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
       text = new THREE.Mesh(textGeometry, textMaterial);
-
       text.geometry.center();
       text.position.y = -1.4;
       scene.add(text);
     }
   );
 
+  window.addEventListener("touchstart", start, { once: true });
+  window.addEventListener("click", start, { once: true });
 
-  window.addEventListener("touchstart", startAnimation, { once: true });
-  window.addEventListener("click", startAnimation, { once: true });
-
-  function startAnimation() {
+  function start() {
     started = true;
     document.getElementById("hint").style.display = "none";
   }
-
 
   let t = 0;
   function animate() {
@@ -122,16 +118,13 @@
 
     if (started) {
       t += 0.03;
-
       heart.rotation.y += 0.01;
       heart.rotation.x += 0.005;
 
       const pulse = 1 + Math.sin(t) * 0.03;
       heart.scale.set(0.35 * pulse, 0.35 * pulse, 0.35 * pulse);
 
-      if (text) {
-        text.rotation.y -= 0.01;
-      }
+      if (text) text.rotation.y -= 0.01;
     }
 
     renderer.render(scene, camera);
